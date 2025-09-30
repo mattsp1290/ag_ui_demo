@@ -6,18 +6,21 @@ publish_to: "none"
 version: 0.1.0
 
 environment:
-  sdk: ^3.9.0
+  sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  english_words: ^4.0.0
   provider: ^6.1.5
+  ag_ui:
+    path: /Users/punk1290/git/ag-ui/sdks/community/dart
+  http: ^1.2.0
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
   flutter_lints: ^6.0.0
+
+dependency_overrides:
+  meta: ^1.17.0
 
 flutter:
   uses-material-design: true
