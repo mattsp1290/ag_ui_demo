@@ -6,6 +6,7 @@ enum ChatMessageType {
   system,
   tool,
   thinking,
+  image,
 }
 
 class ChatMessage {
