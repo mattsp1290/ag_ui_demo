@@ -50,5 +50,11 @@ class EndpointConfig {
       description: 'Chat with predictive state updates',
       icon: Icons.update,
     ),
+    EndpointConfig(
+      name: 'Image Gen',
+      path: 'image-gen',
+      description: 'Generate images from a text prompt using GPT-4o',
+      icon: Icons.image_outlined,
+    ),
   ];
 }

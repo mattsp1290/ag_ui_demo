@@ -333,41 +333,47 @@ class ChatPageState extends ChangeNotifier {
           }
         }
       }
-    } else if (event is StateSnapshotEvent) {
-      // Handle state snapshots - these contain UI generation data
-      final snapshot = event.snapshot;
-      if (snapshot != null && snapshot is Map) {
-        String stateContent = '📊 UI State Generated:\n';
-
-        // Check for steps in the state
-        if (snapshot.containsKey('steps') && snapshot['steps'] is List) {
-          final steps = snapshot['steps'] as List;
-          stateContent += 'Progress Steps:\n';
-          for (int i = 0; i < steps.length; i++) {
-            final step = steps[i];
-            if (step is Map) {
-              final description = step['description'] ?? 'Step ${i + 1}';
-              final status = step['status'] ?? 'pending';
-              final statusIcon = status == 'completed' ? '✅' :
-                               status == 'in_progress' ? '🔄' :
-                               status == 'enabled' ? '⚡' : '⏳';
-              stateContent += '  $statusIcon $description\n';
-            }
-          }
-        } else if (snapshot.containsKey('content')) {
-          // Handle content-based state
-          stateContent += snapshot['content'].toString();
-        } else {
-          // Show raw state for other types
-          stateContent += snapshot.toString();
-        }
-
+    } else if (event is CustomEvent && event.name == 'image_generated') {
+      final value = event.value as Map<String, dynamic>?;
+      final url = value?['url'] as String?;
+      if (url != null && url.isNotEmpty) {
         _messages.add(ChatMessage(
-          id: 'state_${DateTime.now().millisecondsSinceEpoch}',
-          type: ChatMessageType.system,
-          content: stateContent,
+          id: 'image_${DateTime.now().millisecondsSinceEpoch}',
+          type: ChatMessageType.image,
+          content: url,
           timestamp: DateTime.now(),
         ));
+      }
+    } else if (event is StateSnapshotEvent) {
+      final snapshot = event.snapshot;
+      if (snapshot != null && snapshot is Map) {
+        if (snapshot.containsKey('steps') || snapshot.containsKey('content')) {
+          String stateContent = '📊 UI State Generated:\n';
+          if (snapshot.containsKey('steps') && snapshot['steps'] is List) {
+            final steps = snapshot['steps'] as List;
+            stateContent += 'Progress Steps:\n';
+            for (int i = 0; i < steps.length; i++) {
+              final step = steps[i];
+              if (step is Map) {
+                final description = step['description'] ?? 'Step ${i + 1}';
+                final status = step['status'] ?? 'pending';
+                final statusIcon = status == 'completed' ? '✅' :
+                                   status == 'in_progress' ? '🔄' :
+                                   status == 'enabled' ? '⚡' : '⏳';
+                stateContent += '  $statusIcon $description\n';
+              }
+            }
+          } else {
+            stateContent += snapshot['content'].toString();
+          }
+          _messages.add(ChatMessage(
+            id: 'state_${DateTime.now().millisecondsSinceEpoch}',
+            type: ChatMessageType.system,
+            content: stateContent,
+            timestamp: DateTime.now(),
+          ));
+        }
+        // Unknown snapshot shapes (e.g. image-gen {status, prompt}) are silently ignored.
       }
     } else if (event is StateDeltaEvent) {
       // Handle state delta updates

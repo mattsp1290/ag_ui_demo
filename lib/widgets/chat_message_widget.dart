@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/chat_message.dart';
 
@@ -9,6 +10,36 @@ class ChatMessageWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    if (message.type == ChatMessageType.image) {
+      final base64Str = message.content.split(',').last;
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: theme.colorScheme.primary,
+              child: Icon(Icons.image, size: 20, color: theme.colorScheme.onPrimary),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(
+                  base64Decode(base64Str),
+                  fit: BoxFit.contain,
+                  width: 300,
+                  errorBuilder: (_, __, ___) => const Text('(image failed to load)'),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     final isUser = message.type == ChatMessageType.user;
     final isAssistant = message.type == ChatMessageType.assistant;
     final isTool = message.type == ChatMessageType.tool;
