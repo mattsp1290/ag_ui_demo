@@ -41,8 +41,8 @@ class AgUiService {
         ],
         tools: [],
         context: [],
-        state: {},
-        forwardedProps: {},
+        state: <String, dynamic>{},
+        forwardedProps: <String, dynamic>{},
       );
 
       _connectionController.add(ConnectionStatus.connected);
