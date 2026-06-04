@@ -1,6 +1,9 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ag_ui/ag_ui.dart';
+import 'package:file_picker/file_picker.dart';
 import '../models/chat_message.dart';
 import '../models/endpoint_config.dart';
 import '../services/ag_ui_service.dart';
@@ -153,6 +156,7 @@ class ChatPageState extends ChangeNotifier {
   final AgUiService _service;
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
+  bool _disposed = false;
   ConnectionStatus _connectionStatus = ConnectionStatus.disconnected;
   ChatMessage? _currentStreamingMessage;
 
@@ -184,19 +188,24 @@ class ChatPageState extends ChangeNotifier {
 
     try {
       await for (final event in _service.sendMessage(endpoint.path, text)) {
+        if (_disposed) break;
         _handleEvent(event);
       }
     } catch (e) {
-      _messages.add(ChatMessage(
-        id: 'error_${DateTime.now().millisecondsSinceEpoch}',
-        type: ChatMessageType.system,
-        content: 'Error: ${e.toString()}',
-        timestamp: DateTime.now(),
-      ));
+      if (!_disposed) {
+        _messages.add(ChatMessage(
+          id: 'error_${DateTime.now().millisecondsSinceEpoch}',
+          type: ChatMessageType.system,
+          content: 'Error: ${e.toString()}',
+          timestamp: DateTime.now(),
+        ));
+      }
     } finally {
-      _isLoading = false;
-      _currentStreamingMessage = null;
-      notifyListeners();
+      if (!_disposed) {
+        _isLoading = false;
+        _currentStreamingMessage = null;
+        notifyListeners();
+      }
     }
   }
 
@@ -446,7 +455,154 @@ class ChatPageState extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _service.dispose();
     super.dispose();
   }
+}
+
+class MultimodalChatPageState extends ChatPageState {
+  Uint8List? _pickedBytes;
+  String?    _pickedFileName;
+  String?    _pickedMimeType;
+
+  MultimodalChatPageState({required super.endpoint});
+
+  Uint8List? get pickedBytes    => _pickedBytes;
+  String?    get pickedFileName => _pickedFileName;
+  String?    get pickedMimeType => _pickedMimeType;
+  bool       get hasFile        => _pickedBytes != null;
+
+  Future<void> pickFile(
+    List<String> allowedExtensions,
+    BuildContext context,
+  ) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: allowedExtensions,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    final bytes = file.bytes;
+    if (bytes == null) return;
+
+    const maxBytes = 5 * 1024 * 1024;
+    if (bytes.length > maxBytes) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File too large — pick a file under 5 MB')),
+        );
+      }
+      return;
+    }
+
+    _pickedBytes    = bytes;
+    _pickedFileName = file.name;
+    _pickedMimeType = _mimeTypeFor(file.extension ?? '');
+    notifyListeners();
+  }
+
+  void clearPicked() {
+    _pickedBytes    = null;
+    _pickedFileName = null;
+    _pickedMimeType = null;
+    notifyListeners();
+  }
+
+  void sendMultimodal(String questionText) async {
+    if (_pickedBytes == null) return;
+    if (_isLoading)           return;
+
+    final bytes    = _pickedBytes!;
+    final mime     = _pickedMimeType ?? 'application/octet-stream';
+    final fileName = _pickedFileName ?? 'file';
+    final b64      = base64Encode(bytes);
+    final source   = DataSource(value: b64, mimeType: mime);
+
+    final List<InputContent> parts;
+    switch (endpoint.path) {
+      case 'vision':
+        parts = [
+          ImageInputContent(source: source),
+          if (questionText.trim().isNotEmpty) TextInputContent(questionText.trim()),
+        ];
+      case 'audio':
+        parts = [AudioInputContent(source: source)];
+      case 'document':
+        parts = [
+          DocumentInputContent(source: source),
+          if (questionText.trim().isNotEmpty) TextInputContent(questionText.trim()),
+        ];
+      default:
+        parts = [ImageInputContent(source: source)];
+    }
+
+    switch (endpoint.path) {
+      case 'vision':
+        _messages.add(ChatMessage(
+          id: 'attachment_${DateTime.now().millisecondsSinceEpoch}',
+          type: ChatMessageType.imageAttachment,
+          content: fileName,
+          imageBytes: bytes,
+          timestamp: DateTime.now(),
+        ));
+      case 'audio':
+        _messages.add(ChatMessage(
+          id: 'attachment_${DateTime.now().millisecondsSinceEpoch}',
+          type: ChatMessageType.audioAttachment,
+          content: fileName,
+          fileName: fileName,
+          timestamp: DateTime.now(),
+        ));
+      case 'document':
+        _messages.add(ChatMessage(
+          id: 'attachment_${DateTime.now().millisecondsSinceEpoch}',
+          type: ChatMessageType.documentAttachment,
+          content: fileName,
+          fileName: fileName,
+          timestamp: DateTime.now(),
+        ));
+    }
+
+    _isLoading = true;
+    clearPicked();
+    notifyListeners();
+
+    try {
+      await for (final event in _service.sendMultimodalMessage(endpoint.path, parts)) {
+        if (_disposed) break;
+        _handleEvent(event);
+      }
+    } catch (e) {
+      if (!_disposed) {
+        _messages.add(ChatMessage(
+          id: 'error_${DateTime.now().millisecondsSinceEpoch}',
+          type: ChatMessageType.system,
+          content: 'Error: ${e.toString()}',
+          timestamp: DateTime.now(),
+        ));
+      }
+    } finally {
+      if (!_disposed) {
+        _isLoading = false;
+        _currentStreamingMessage = null;
+        notifyListeners();
+      }
+    }
+  }
+
+  static String _mimeTypeFor(String ext) => const {
+    'jpg':  'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png':  'image/png',
+    'gif':  'image/gif',
+    'webp': 'image/webp',
+    'mp3':  'audio/mpeg',
+    'wav':  'audio/wav',
+    'm4a':  'audio/mp4',
+    'ogg':  'audio/ogg',
+    'webm': 'audio/webm',
+    'pdf':  'application/pdf',
+  }[ext.toLowerCase()] ?? 'application/octet-stream';
 }

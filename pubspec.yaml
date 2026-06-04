@@ -15,6 +15,7 @@ dependencies:
   ag_ui:
     path: /Users/punk1290/git/ag-ui/sdks/community/dart
   http: ^1.2.0
+  file_picker: ^8.1.7
 
 dev_dependencies:
   flutter_lints: ^6.0.0

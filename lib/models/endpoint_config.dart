@@ -5,12 +5,16 @@ class EndpointConfig {
   final String path;
   final String description;
   final IconData icon;
+  final bool isMultimodal;
+  final List<String> allowedExtensions;
 
   const EndpointConfig({
     required this.name,
     required this.path,
     required this.description,
     required this.icon,
+    this.isMultimodal = false,
+    this.allowedExtensions = const [],
   });
 
   static const List<EndpointConfig> availableEndpoints = [
@@ -55,6 +59,30 @@ class EndpointConfig {
       path: 'image-gen',
       description: 'Generate images from a text prompt using GPT-4o',
       icon: Icons.image_outlined,
+    ),
+    EndpointConfig(
+      name: 'Vision',
+      path: 'vision',
+      description: 'Analyze images with GPT-4o vision',
+      icon: Icons.image_search,
+      isMultimodal: true,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+    ),
+    EndpointConfig(
+      name: 'Audio',
+      path: 'audio',
+      description: 'Transcribe audio with Whisper',
+      icon: Icons.mic,
+      isMultimodal: true,
+      allowedExtensions: ['mp3', 'wav', 'm4a', 'ogg', 'webm'],
+    ),
+    EndpointConfig(
+      name: 'Document Q&A',
+      path: 'document',
+      description: 'Ask questions about a PDF',
+      icon: Icons.description,
+      isMultimodal: true,
+      allowedExtensions: ['pdf'],
     ),
   ];
 }
