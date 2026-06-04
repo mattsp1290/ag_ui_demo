@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:ag_ui/ag_ui.dart';
 
 enum ChatMessageType {
@@ -7,6 +8,9 @@ enum ChatMessageType {
   tool,
   thinking,
   image,
+  imageAttachment,
+  audioAttachment,
+  documentAttachment,
 }
 
 class ChatMessage {
@@ -18,6 +22,8 @@ class ChatMessage {
   final String? toolName;
   final dynamic toolArgs;
   final dynamic toolResult;
+  final String? fileName;
+  final Uint8List? imageBytes;
 
   ChatMessage({
     required this.id,
@@ -28,6 +34,8 @@ class ChatMessage {
     this.toolName,
     this.toolArgs,
     this.toolResult,
+    this.fileName,
+    this.imageBytes,
   });
 
   ChatMessage copyWith({
@@ -39,6 +47,8 @@ class ChatMessage {
     String? toolName,
     dynamic toolArgs,
     dynamic toolResult,
+    String? fileName,
+    Uint8List? imageBytes,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -49,6 +59,8 @@ class ChatMessage {
       toolName: toolName ?? this.toolName,
       toolArgs: toolArgs ?? this.toolArgs,
       toolResult: toolResult ?? this.toolResult,
+      fileName: fileName ?? this.fileName,
+      imageBytes: imageBytes ?? this.imageBytes,
     );
   }
 

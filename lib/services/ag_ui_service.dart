@@ -59,6 +59,42 @@ class AgUiService {
     }
   }
 
+  Stream<BaseEvent> sendMultimodalMessage(
+    String endpoint,
+    List<InputContent> parts,
+  ) async* {
+    try {
+      _connectionController.add(ConnectionStatus.connecting);
+
+      final input = SimpleRunAgentInput(
+        threadId: 'thread_${DateTime.now().millisecondsSinceEpoch}',
+        runId: 'run_${DateTime.now().millisecondsSinceEpoch}',
+        messages: [
+          UserMessage.multimodal(
+            id: 'user_${DateTime.now().millisecondsSinceEpoch}',
+            parts: parts,
+          ),
+        ],
+        tools: [],
+        context: [],
+        state: <String, dynamic>{},
+        forwardedProps: <String, dynamic>{},
+      );
+
+      _connectionController.add(ConnectionStatus.connected);
+
+      await for (final event in _client.runAgent(endpoint, input)) {
+        yield event;
+      }
+
+      _connectionController.add(ConnectionStatus.disconnected);
+    } catch (e) {
+      _connectionController.add(ConnectionStatus.error);
+      debugPrint('Error sending multimodal message: $e');
+      rethrow;
+    }
+  }
+
   void dispose() {
     _connectionController.close();
   }

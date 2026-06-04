@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'models/endpoint_config.dart';
 import 'pages/chat_page.dart';
-import 'services/ag_ui_service.dart';
+import 'pages/multimodal_chat_page.dart';
 
 void main() {
   runApp(MyApp());
@@ -54,10 +54,15 @@ class _MyHomePageState extends State<MyHomePage> {
     final selectedIndex = appState.selectedEndpointIndex;
     final endpoint = appState.selectedEndpoint;
 
-    Widget page = ChatPage(
-      key: ValueKey(endpoint.path),
-      endpoint: endpoint,
-    );
+    Widget page = endpoint.isMultimodal
+        ? MultimodalChatPage(
+            key: ValueKey(endpoint.path),
+            endpoint: endpoint,
+          )
+        : ChatPage(
+            key: ValueKey(endpoint.path),
+            endpoint: endpoint,
+          );
 
     return LayoutBuilder(
       builder: (context, constraints) {

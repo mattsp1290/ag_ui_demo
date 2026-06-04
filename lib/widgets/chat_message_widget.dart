@@ -40,6 +40,84 @@ class ChatMessageWidget extends StatelessWidget {
       );
     }
 
+    if (message.type == ChatMessageType.imageAttachment) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Flexible(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: message.imageBytes != null
+                    ? Image.memory(
+                        message.imageBytes!,
+                        fit: BoxFit.contain,
+                        width: 200,
+                        errorBuilder: (_, __, ___) =>
+                            const Text('(image failed to load)'),
+                      )
+                    : const Text('(no image data)'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              child: Icon(Icons.person, size: 20,
+                          color: theme.colorScheme.onPrimaryContainer),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (message.type == ChatMessageType.audioAttachment ||
+        message.type == ChatMessageType.documentAttachment) {
+      final isAudio = message.type == ChatMessageType.audioAttachment;
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isAudio ? Icons.audio_file : Icons.picture_as_pdf,
+                    size: 20,
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    message.fileName ?? message.content,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              child: Icon(Icons.person, size: 20,
+                          color: theme.colorScheme.onPrimaryContainer),
+            ),
+          ],
+        ),
+      );
+    }
+
     final isUser = message.type == ChatMessageType.user;
     final isAssistant = message.type == ChatMessageType.assistant;
     final isTool = message.type == ChatMessageType.tool;
