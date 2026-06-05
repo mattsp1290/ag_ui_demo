@@ -84,5 +84,12 @@ class EndpointConfig {
       isMultimodal: true,
       allowedExtensions: ['pdf'],
     ),
+    EndpointConfig(
+      name: 'Reasoning Demo',
+      path: 'reasoning',
+      description: 'Streams live reasoning events and includes a ReasoningMessage '
+          'in MESSAGES_SNAPSHOT. Exercises the new Dart ReasoningMessage type.',
+      icon: Icons.psychology,
+    ),
   ];
 }

@@ -271,6 +271,38 @@ class ChatPageState extends ChangeNotifier {
           _messages[index] = lastThinking.copyWith(isStreaming: false);
         }
       }
+    } else if (event is ReasoningStartEvent) {
+      _messages.add(ChatMessage(
+        id: 'reasoning_${DateTime.now().millisecondsSinceEpoch}',
+        type: ChatMessageType.reasoning,
+        content: 'Reasoning...',
+        timestamp: DateTime.now(),
+        isStreaming: true,
+      ));
+    } else if (event is ReasoningMessageContentEvent) {
+      final reasoningMessages = _messages
+          .where((m) => m.type == ChatMessageType.reasoning && m.isStreaming)
+          .toList();
+      if (reasoningMessages.isNotEmpty) {
+        final lastReasoning = reasoningMessages.last;
+        final index = _messages.indexOf(lastReasoning);
+        if (index != -1) {
+          _messages[index] = lastReasoning.copyWith(
+            content: lastReasoning.content + event.delta,
+          );
+        }
+      }
+    } else if (event is ReasoningEndEvent) {
+      final reasoningMessages = _messages
+          .where((m) => m.type == ChatMessageType.reasoning && m.isStreaming)
+          .toList();
+      if (reasoningMessages.isNotEmpty) {
+        final lastReasoning = reasoningMessages.last;
+        final index = _messages.indexOf(lastReasoning);
+        if (index != -1) {
+          _messages[index] = lastReasoning.copyWith(isStreaming: false);
+        }
+      }
     } else if (event is ToolCallResultEvent) {
       _messages.add(ChatMessage.fromAssistantEvent(event));
     } else if (event is ToolCallStartEvent) {
@@ -339,6 +371,16 @@ class ChatPageState extends ChangeNotifier {
                 toolArgs: toolCall.function?.arguments,
               ));
             }
+          }
+        } else if (message is ReasoningMessage) {
+          final text = message.content ?? message.thinking ?? '';
+          if (text.isNotEmpty) {
+            _messages.add(ChatMessage(
+              id: message.id ?? 'reasoning_${DateTime.now().millisecondsSinceEpoch}',
+              type: ChatMessageType.reasoning,
+              content: text,
+              timestamp: DateTime.now(),
+            ));
           }
         }
       }

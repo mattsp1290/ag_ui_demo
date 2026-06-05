@@ -11,6 +11,7 @@ enum ChatMessageType {
   imageAttachment,
   audioAttachment,
   documentAttachment,
+  reasoning,
 }
 
 class ChatMessage {
