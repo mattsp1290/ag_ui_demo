@@ -122,6 +122,7 @@ class ChatMessageWidget extends StatelessWidget {
     final isAssistant = message.type == ChatMessageType.assistant;
     final isTool = message.type == ChatMessageType.tool;
     final isThinking = message.type == ChatMessageType.thinking;
+    final isReasoning = message.type == ChatMessageType.reasoning;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -137,7 +138,7 @@ class ChatMessageWidget extends StatelessWidget {
                   ? theme.colorScheme.primary
                   : isTool
                       ? theme.colorScheme.secondary
-                      : isThinking
+                      : (isThinking || isReasoning)
                           ? theme.colorScheme.tertiary
                           : theme.colorScheme.surface,
               child: Icon(
@@ -145,7 +146,7 @@ class ChatMessageWidget extends StatelessWidget {
                     ? Icons.smart_toy
                     : isTool
                         ? Icons.build
-                        : isThinking
+                        : (isThinking || isReasoning)
                             ? Icons.psychology
                             : Icons.info,
                 size: 20,
@@ -160,7 +161,7 @@ class ChatMessageWidget extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isUser
                     ? theme.colorScheme.primaryContainer
-                    : isThinking
+                    : (isThinking || isReasoning)
                         ? theme.colorScheme.tertiaryContainer.withOpacity(0.5)
                         : theme.colorScheme.surfaceVariant,
                 borderRadius: BorderRadius.only(
@@ -198,7 +199,7 @@ class ChatMessageWidget extends StatelessWidget {
                     style: TextStyle(
                       color: isUser
                           ? theme.colorScheme.onPrimaryContainer
-                          : isThinking
+                          : (isThinking || isReasoning)
                               ? theme.colorScheme.onTertiaryContainer
                               : theme.colorScheme.onSurfaceVariant,
                     ),
