@@ -219,6 +219,16 @@ queued** — otherwise it would clear the flag out from under an in-flight
 > - **The body is `try/catch/finally`** (above) because it's unawaited: a throw from
 >   `_service.run` or a malformed-args `jsonDecode` inside `_execute` must surface to the
 >   UI and reset `_busy`, not vanish as an unobserved async error.
+>
+> **Implementation refinement (as built).** A single `_busy` flag is subtly racy for
+> ownership: the initial-send loop's `finally` and the launched `_resolveToolCalls` can
+> both try to clear it. The implementation therefore uses a second flag, `_resolving`,
+> set true for the lifetime of `_resolveToolCalls`. The launch guard is
+> `_pendingCalls.isNotEmpty && !_resolving` (not `!_busy`, since `_busy` is already true
+> from the first send). The initial-send `finally` clears `_busy` only `if (!_resolving)`
+> — so a launched round-trip owns the flag and clears it in its own `finally` when the
+> exchange converges. `agentic_chat` and `tool_based_generative_ui` both route through
+> this same `ClientToolsPageState`, so the round-trip lives in exactly one place.
 
 `_execute` for `agentic_chat`:
 
