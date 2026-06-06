@@ -5,6 +5,7 @@ import 'package:ag_ui/ag_ui.dart';
 import '../models/endpoint_config.dart';
 import '../models/seed_state.dart';
 import '../services/ag_ui_service.dart';
+import '../services/ids.dart';
 import '../services/json_patch.dart';
 import '../widgets/chat_input_widget.dart';
 import '../widgets/checklist_widget.dart';
@@ -17,7 +18,7 @@ import '../widgets/predictive_steps_widget.dart';
 class LiveStatePage extends StatelessWidget {
   final EndpointConfig endpoint;
 
-  const LiveStatePage({Key? key, required this.endpoint}) : super(key: key);
+  const LiveStatePage({super.key, required this.endpoint});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +30,7 @@ class LiveStatePage extends StatelessWidget {
 }
 
 class LiveStatePageView extends StatelessWidget {
-  const LiveStatePageView({Key? key}) : super(key: key);
+  const LiveStatePageView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +38,7 @@ class LiveStatePageView extends StatelessWidget {
     final state = context.watch<LiveStatePageState>();
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,24 +151,21 @@ class LiveStatePageState extends ChangeNotifier {
   bool disposed = false;
   String? lastSummary;
 
-  ConnectionStatus _connectionStatus = ConnectionStatus.disconnected;
-
   LiveStatePageState({required this.endpoint}) {
     final seed = seedStateFns[endpoint.path];
     if (seed != null) doc = seed();
-    _service.connectionStatus.listen((s) {
-      _connectionStatus = s;
-      if (!disposed) notifyListeners();
-    });
   }
 
   bool get busy => _busy;
-  ConnectionStatus get connectionStatus => _connectionStatus;
+
+  void _notify() {
+    if (!disposed) notifyListeners();
+  }
 
   void sendMessage(String text) async {
     if (text.trim().isEmpty || _busy) return;
 
-    _history.add(UserMessage(id: 'user_${_now()}', content: text.trim()));
+    _history.add(UserMessage(id: uid('user'), content: text.trim()));
     _busy = true;
     lastSummary = null;
     notifyListeners();
@@ -193,19 +191,21 @@ class LiveStatePageState extends ChangeNotifier {
   }
 
   /// `agentic_generative_ui` owns its document; the recipe routes echo the (possibly
-  /// user-edited) local document back so the server adopts it (last-writer-wins).
+  /// user-edited) local document back so the server adopts it (last-writer-wins). The
+  /// echo is cloned so an in-flight request never aliases the live, mutating doc.
   dynamic _stateForRequest() {
-    if (endpoint.path == 'agentic_generative_ui') return null;
-    return doc; // {recipe: {...}}
+    if (endpoint.path == 'agentic_generative_ui' || doc == null) return null;
+    return jsonDecode(jsonEncode(doc));
   }
 
   void _handleEvent(BaseEvent event) {
     // The document is the focus of these demos. The assistant's "what I changed"
-    // summary is shown in the strip below; reasoning/thinking are intentionally not
-    // separately surfaced here (the live document reaction is the feedback). RUN_ERROR
-    // is surfaced in the summary strip so it is never silently swallowed.
+    // summary is shown in the strip below; reasoning is intentionally not separately
+    // surfaced here (the live document reaction is the feedback). RUN_ERROR is surfaced
+    // in the summary strip so it is never silently swallowed.
     if (event is StateSnapshotEvent) {
-      doc = jsonDecode(jsonEncode(event.snapshot)); // clone → mutable, unaliased
+      // snapshot is `dynamic` and could be null; clone when present, else reset.
+      doc = event.snapshot == null ? null : jsonDecode(jsonEncode(event.snapshot));
     } else if (event is StateDeltaEvent) {
       doc = applyJsonPatch(doc, event.delta);
     } else if (event is TextMessageStartEvent) {
@@ -218,7 +218,7 @@ class LiveStatePageState extends ChangeNotifier {
       lastSummary = '⚠️ Run error: ${event.message}';
       _busy = false;
     }
-    if (!disposed) notifyListeners();
+    _notify();
   }
 
   // --- Recipe card edits (shared_state collaboration) ---
@@ -230,7 +230,7 @@ class LiveStatePageState extends ChangeNotifier {
     final r = _recipe;
     if (r == null) return;
     r['title'] = title;
-    notifyListeners();
+    _notify();
   }
 
   void changeServings(int delta) {
@@ -238,7 +238,7 @@ class LiveStatePageState extends ChangeNotifier {
     if (r == null) return;
     final current = ((r['servings'] as num?) ?? 0).toInt();
     r['servings'] = (current + delta).clamp(1, 99);
-    notifyListeners();
+    _notify();
   }
 
   void addIngredient(String name, String amount) {
@@ -246,7 +246,7 @@ class LiveStatePageState extends ChangeNotifier {
     if (r == null || name.trim().isEmpty) return;
     final list = (r['ingredients'] as List?) ?? (r['ingredients'] = []);
     list.add({'name': name.trim(), 'amount': amount.trim()});
-    notifyListeners();
+    _notify();
   }
 
   void removeIngredient(int index) {
@@ -254,10 +254,8 @@ class LiveStatePageState extends ChangeNotifier {
     final list = r?['ingredients'] as List?;
     if (list == null || index < 0 || index >= list.length) return;
     list.removeAt(index);
-    notifyListeners();
+    _notify();
   }
-
-  int _now() => DateTime.now().microsecondsSinceEpoch;
 
   @override
   void dispose() {

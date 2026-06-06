@@ -8,8 +8,7 @@ class PredictiveStepsWidget extends StatelessWidget {
   final List steps;
   final String? draft;
 
-  const PredictiveStepsWidget({Key? key, required this.steps, this.draft})
-      : super(key: key);
+  const PredictiveStepsWidget({super.key, required this.steps, this.draft});
 
   @override
   Widget build(BuildContext context) {

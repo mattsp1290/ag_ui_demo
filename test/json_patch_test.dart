@@ -186,6 +186,54 @@ void main() {
     });
   });
 
+  group('applyJsonPatch — null root guard', () {
+    test('per-path op on a null root is a no-op (returns null, no throw)', () {
+      final out = applyJsonPatch(null, [
+        {'op': 'replace', 'path': '/a', 'value': 1}
+      ]);
+      expect(out, isNull);
+    });
+
+    test('whole-document add on a null root sets the root', () {
+      final out = applyJsonPatch(null, [
+        {'op': 'add', 'path': '', 'value': {'recipe': {}}}
+      ]);
+      expect(out, {'recipe': {}});
+    });
+  });
+
+  group('applyJsonPatch — malformed input throws (documents the contract)', () {
+    test('remove past end of array throws', () {
+      final doc = clone({'xs': [1, 2]});
+      expect(
+        () => applyJsonPatch(doc, [
+          {'op': 'remove', 'path': '/xs/5'}
+        ]),
+        throwsA(anything),
+      );
+    });
+
+    test('"-" token with replace throws (only valid for add)', () {
+      final doc = clone({'xs': [1]});
+      expect(
+        () => applyJsonPatch(doc, [
+          {'op': 'replace', 'path': '/xs/-', 'value': 9}
+        ]),
+        throwsA(anything),
+      );
+    });
+
+    test('non-integer array index segment throws', () {
+      final doc = clone({'xs': [1]});
+      expect(
+        () => applyJsonPatch(doc, [
+          {'op': 'replace', 'path': '/xs/foo', 'value': 9}
+        ]),
+        throwsA(anything),
+      );
+    });
+  });
+
   group('applyJsonPatch — pointer parsing', () {
     test('whole-document replace at root', () {
       var doc = clone({'a': 1});

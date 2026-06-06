@@ -1,13 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:ag_ui/ag_ui.dart';
 import '../models/chat_message.dart';
+import '../services/ids.dart';
 
 /// Shared AG-UI event handling for the dojo page state classes.
 ///
 /// Centralizes the cross-cutting behaviors that every page needs and that are NOT
 /// inherited from `ChatPageState`:
 ///  - text-message streaming (start/content/end/chunk),
-///  - reasoning / thinking passthrough,
+///  - reasoning passthrough (the current AG-UI path; the deprecated THINKING_* events
+///    are not handled — the dojo server emits REASONING_*),
 ///  - `RUN_ERROR` (which arrives as a [RunErrorEvent] *through the stream*, not a throw).
 ///
 /// Host classes mix this in (`with AgUiEventHandling`), maintain [messages], set
@@ -46,7 +48,7 @@ mixin AgUiEventHandling on ChangeNotifier {
     if (event is TextMessageChunkEvent) {
       if (_streaming == null) {
         _streaming = ChatMessage(
-          id: event.messageId ?? 'assistant_${_now()}',
+          id: event.messageId ?? uid('assistant'),
           type: ChatMessageType.assistant,
           content: event.delta ?? '',
           timestamp: DateTime.now(),
@@ -64,7 +66,7 @@ mixin AgUiEventHandling on ChangeNotifier {
     }
     if (event is ReasoningStartEvent) {
       messages.add(ChatMessage(
-        id: 'reasoning_${_now()}',
+        id: uid('reasoning'),
         type: ChatMessageType.reasoning,
         content: '',
         timestamp: DateTime.now(),
@@ -80,27 +82,9 @@ mixin AgUiEventHandling on ChangeNotifier {
       _endStreamingOfType(ChatMessageType.reasoning);
       return true;
     }
-    if (event is ThinkingStartEvent) {
-      messages.add(ChatMessage(
-        id: 'thinking_${_now()}',
-        type: ChatMessageType.thinking,
-        content: '',
-        timestamp: DateTime.now(),
-        isStreaming: true,
-      ));
-      return true;
-    }
-    if (event is ThinkingContentEvent) {
-      _appendStreamingOfType(ChatMessageType.thinking, event.delta);
-      return true;
-    }
-    if (event is ThinkingEndEvent) {
-      _endStreamingOfType(ChatMessageType.thinking);
-      return true;
-    }
     if (event is RunErrorEvent) {
       messages.add(ChatMessage(
-        id: 'error_${_now()}',
+        id: uid('error'),
         type: ChatMessageType.system,
         content: '⚠️ Run error: ${event.message}',
         timestamp: DateTime.now(),
@@ -115,7 +99,7 @@ mixin AgUiEventHandling on ChangeNotifier {
   void addReasoningMessage(String text) {
     if (text.isEmpty) return;
     messages.add(ChatMessage(
-      id: 'reasoning_${_now()}',
+      id: uid('reasoning'),
       type: ChatMessageType.reasoning,
       content: text,
       timestamp: DateTime.now(),
@@ -154,6 +138,4 @@ mixin AgUiEventHandling on ChangeNotifier {
     final i = messages.indexOf(last);
     if (i != -1) messages[i] = last.copyWith(isStreaming: false);
   }
-
-  int _now() => DateTime.now().microsecondsSinceEpoch;
 }

@@ -11,13 +11,13 @@ class RecipeCardWidget extends StatelessWidget {
   final ValueChanged<int> onRemoveIngredient;
 
   const RecipeCardWidget({
-    Key? key,
+    super.key,
     required this.recipe,
     required this.onEditTitle,
     required this.onChangeServings,
     required this.onAddIngredient,
     required this.onRemoveIngredient,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +36,12 @@ class RecipeCardWidget extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Title (editable).
+                // Title (editable). NOTE: `initialValue` + a title-keyed ValueKey makes
+                // the field reflect agent STATE_DELTA title edits, at the cost of
+                // rebuilding (losing focus / in-progress text) if the agent edits the
+                // title while the user is typing. Acceptable for the demo; switch to a
+                // controller + didUpdateWidget reconciliation if smoother concurrent
+                // editing is needed.
                 Row(
                   children: [
                     Expanded(

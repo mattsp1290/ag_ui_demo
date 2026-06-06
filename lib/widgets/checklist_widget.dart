@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 class ChecklistWidget extends StatelessWidget {
   final List steps;
 
-  const ChecklistWidget({Key? key, required this.steps}) : super(key: key);
+  const ChecklistWidget({super.key, required this.steps});
 
   @override
   Widget build(BuildContext context) {

@@ -8,7 +8,24 @@
 /// hit this (the server always `add`s whole parent objects, e.g. predictive re-adds the
 /// entire `/_predictive` object rather than `/_predictive/draft`), so a future deep
 /// `add` into a missing parent SHOULD fail loudly against this assumption.
+///
+/// Note: `add`/`replace` store `op['value']` by reference (no deep copy). This is safe
+/// because each delta is freshly decoded per event, so the stored subtree is not shared
+/// with anything else.
 dynamic applyJsonPatch(dynamic root, List<Map<String, dynamic>> ops) {
+  // A null root has no structure to patch (e.g. a delta arriving after a null
+  // STATE_SNAPSHOT). Only a whole-document replace/add at "" can set it; per-path ops
+  // are no-ops rather than a crash.
+  if (root == null) {
+    for (final op in ops) {
+      final path = op['path'] as String? ?? '';
+      final kind = op['op'] as String?;
+      if (path.isEmpty && (kind == 'replace' || kind == 'add')) {
+        root = op['value'];
+      }
+    }
+    return root;
+  }
   for (final op in ops) {
     final kind = op['op'] as String?;
     final path = op['path'] as String? ?? '';

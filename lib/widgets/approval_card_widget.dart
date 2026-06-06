@@ -9,11 +9,11 @@ class ApprovalCardWidget extends StatelessWidget {
   final VoidCallback onDeny;
 
   const ApprovalCardWidget({
-    Key? key,
+    super.key,
     required this.summary,
     required this.onApprove,
     required this.onDeny,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,9 +22,9 @@ class ApprovalCardWidget extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.errorContainer.withOpacity(0.4),
+        color: theme.colorScheme.errorContainer.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.error.withOpacity(0.5)),
+        border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

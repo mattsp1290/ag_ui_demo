@@ -13,7 +13,6 @@ enum ChatMessageType {
   documentAttachment,
   reasoning,
   card,
-  approval,
 }
 
 class ChatMessage {

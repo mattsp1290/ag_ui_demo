@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 class CardWidget extends StatelessWidget {
   final Map<String, dynamic> data;
 
-  const CardWidget({Key? key, required this.data}) : super(key: key);
+  const CardWidget({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +29,21 @@ class CardWidget extends StatelessWidget {
                 height: 140,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                loadingBuilder: (context, child, progress) => progress == null
+                    ? child
+                    : Container(
+                        height: 140,
+                        alignment: Alignment.center,
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        child: const CircularProgressIndicator(),
+                      ),
+                errorBuilder: (_, __, ___) => Container(
+                  height: 140,
+                  alignment: Alignment.center,
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  child: Icon(Icons.broken_image_outlined,
+                      color: theme.colorScheme.outline),
+                ),
               ),
             Padding(
               padding: const EdgeInsets.all(16),
