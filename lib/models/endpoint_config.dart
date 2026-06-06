@@ -81,31 +81,32 @@ class EndpointConfig {
       description: 'Agent proposes consequential actions; you approve or deny',
       icon: Icons.person_add,
       featureKind: FeatureKind.approval,
+      // A dedicated approval tool, matching the server's HITL system prompt ("call the
+      // provided approval tool with a human-readable summary and wait for the result").
+      // Verified empirically: the model reliably calls request_approval under this
+      // prompt, whereas bare action tools (send_email/delete_file) were NOT gated —
+      // the model answered in prose instead. See plan 03 §"design tension".
       tools: [
         Tool(
-          name: 'send_email',
+          name: 'request_approval',
           description:
-              'Sends an email. Consequential — must be approved before sending.',
+              'Request the user\'s approval before performing any consequential or '
+              'irreversible action (sending, deleting, purchasing, modifying data). '
+              'Call this FIRST with a clear human-readable summary and the action name, '
+              'and wait for the result before proceeding.',
           parameters: {
             'type': 'object',
             'properties': {
-              'to': {'type': 'string'},
-              'subject': {'type': 'string'},
-              'body': {'type': 'string'},
+              'summary': {
+                'type': 'string',
+                'description': 'Human-readable description of the intended action',
+              },
+              'action': {
+                'type': 'string',
+                'description': 'Short action identifier, e.g. send_email',
+              },
             },
-            'required': ['to', 'subject', 'body'],
-          },
-        ),
-        Tool(
-          name: 'delete_file',
-          description:
-              'Deletes a file. Consequential — must be approved before deleting.',
-          parameters: {
-            'type': 'object',
-            'properties': {
-              'path': {'type': 'string'},
-            },
-            'required': ['path'],
+            'required': ['summary', 'action'],
           },
         ),
       ],

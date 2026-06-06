@@ -304,9 +304,13 @@ class ClientToolsPageState extends ChangeNotifier with AgUiEventHandling {
 
     switch (name) {
       case 'get_current_time':
-        return jsonEncode({'time': DateTime.now().toIso8601String()});
+        final r = jsonEncode({'time': DateTime.now().toIso8601String()});
+        _addToolBubble(name, args, r);
+        return r;
       case 'calculate':
-        return _calculate(args['expression'] as String? ?? '');
+        final r = _calculate(args['expression'] as String? ?? '');
+        _addToolBubble(name, args, r);
+        return r;
       case 'render_card':
         // The card IS the result: render it, then acknowledge so the model can close.
         messages.add(ChatMessage(
@@ -352,6 +356,21 @@ class ClientToolsPageState extends ChangeNotifier with AgUiEventHandling {
     return jsonEncode({'approved': true, 'result': _performDemoAction(name, args)});
   }
 
+  /// Renders an agentic_chat tool call + its result as a visible bubble, so the
+  /// invocation is shown (plan 02), not just the model's final text.
+  void _addToolBubble(String name, Map<String, dynamic> args, String result) {
+    messages.add(ChatMessage(
+      id: 'tool_${_now()}',
+      type: ChatMessageType.tool,
+      content: args.isEmpty
+          ? '$name()\n→ $result'
+          : '$name(${jsonEncode(args)})\n→ $result',
+      timestamp: DateTime.now(),
+      toolName: name,
+    ));
+    if (!disposed) notifyListeners();
+  }
+
   void approve() => _resolveDecision(true);
   void deny() => _resolveDecision(false);
 
@@ -362,11 +381,10 @@ class ClientToolsPageState extends ChangeNotifier with AgUiEventHandling {
 
   String _summarize(String name, Map<String, dynamic> args) {
     switch (name) {
-      case 'send_email':
-        return 'Send an email to ${args['to']} — "${args['subject']}":\n'
-            '${args['body']}';
-      case 'delete_file':
-        return 'Delete the file at ${args['path']}';
+      case 'request_approval':
+        return (args['summary'] as String?)?.trim().isNotEmpty == true
+            ? args['summary'] as String
+            : 'Approve action: ${args['action'] ?? name}?';
       default:
         return 'Run $name with ${jsonEncode(args)}';
     }
@@ -374,10 +392,8 @@ class ClientToolsPageState extends ChangeNotifier with AgUiEventHandling {
 
   String _performDemoAction(String name, Map<String, dynamic> args) {
     switch (name) {
-      case 'send_email':
-        return 'Email sent to ${args['to']}.';
-      case 'delete_file':
-        return 'Deleted ${args['path']}.';
+      case 'request_approval':
+        return 'The user approved. You may proceed with: ${args['action'] ?? 'the action'}.';
       default:
         return 'Done.';
     }

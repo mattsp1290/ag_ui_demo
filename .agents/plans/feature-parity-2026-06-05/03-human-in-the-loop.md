@@ -76,12 +76,14 @@ would have built, but we build it ourselves from the proposed call.
 > - *For a dedicated approval tool:* the prompt's wording and its "summary" argument.
 >
 > Whether the model *reliably gates a bare action tool* under this prompt is an
-> **empirical runtime question** that can't be settled from source. **Decision:** keep
-> the action-tool design (simpler, and the interrupt path supports it), but **add the
-> acceptance test in `05`** that confirms the model actually calls the action tool and
-> waits for the result (rather than describing the action in prose and stopping). If
-> that test proves flaky, fall back to a dedicated `request_approval(summary, action)`
-> tool and gate on *that* — the round-trip machinery is identical either way.
+> **empirical runtime question**. **RESOLVED by live test (2026-06-06):** under
+> `humanInTheLoopSystemPrompt`, a bare `send_email`/`delete_file` tool was **not**
+> called — the model answered in prose (CUSTOM `agent_complete` on the no-tool success
+> path). A dedicated `request_approval(summary, action)` tool **was** reliably called.
+> **Decision (as built):** the HITL endpoint defines a single `request_approval` tool;
+> the approval card renders its `summary`, and the user's decision is returned as the
+> tool result (`{approved:true,…}` / `{approved:false,…}`). The round-trip machinery is
+> the same as `02`.
 
 ## The gate: `_execute` becomes a user decision
 
