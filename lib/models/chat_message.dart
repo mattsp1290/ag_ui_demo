@@ -12,6 +12,8 @@ enum ChatMessageType {
   audioAttachment,
   documentAttachment,
   reasoning,
+  card,
+  approval,
 }
 
 class ChatMessage {
@@ -26,6 +28,10 @@ class ChatMessage {
   final String? fileName;
   final Uint8List? imageBytes;
 
+  /// Parsed arguments for a `card` message (tool_based_generative_ui render_card),
+  /// or the proposed-call args for an `approval` message (human_in_the_loop).
+  final Map<String, dynamic>? cardData;
+
   ChatMessage({
     required this.id,
     required this.type,
@@ -37,6 +43,7 @@ class ChatMessage {
     this.toolResult,
     this.fileName,
     this.imageBytes,
+    this.cardData,
   });
 
   ChatMessage copyWith({
@@ -50,6 +57,7 @@ class ChatMessage {
     dynamic toolResult,
     String? fileName,
     Uint8List? imageBytes,
+    Map<String, dynamic>? cardData,
   }) {
     return ChatMessage(
       id: id ?? this.id,
@@ -62,6 +70,7 @@ class ChatMessage {
       toolResult: toolResult ?? this.toolResult,
       fileName: fileName ?? this.fileName,
       imageBytes: imageBytes ?? this.imageBytes,
+      cardData: cardData ?? this.cardData,
     );
   }
 

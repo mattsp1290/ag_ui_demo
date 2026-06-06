@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'models/endpoint_config.dart';
 import 'pages/chat_page.dart';
 import 'pages/multimodal_chat_page.dart';
+import 'pages/client_tools_page.dart';
+import 'pages/live_state_page.dart';
 
 void main() {
   runApp(MyApp());
@@ -54,15 +56,19 @@ class _MyHomePageState extends State<MyHomePage> {
     final selectedIndex = appState.selectedEndpointIndex;
     final endpoint = appState.selectedEndpoint;
 
-    Widget page = endpoint.isMultimodal
-        ? MultimodalChatPage(
-            key: ValueKey(endpoint.path),
-            endpoint: endpoint,
-          )
-        : ChatPage(
-            key: ValueKey(endpoint.path),
-            endpoint: endpoint,
-          );
+    final pageKey = ValueKey(endpoint.path);
+    Widget page;
+    switch (endpoint.featureKind) {
+      case FeatureKind.multimodal:
+        page = MultimodalChatPage(key: pageKey, endpoint: endpoint);
+      case FeatureKind.clientTools:
+      case FeatureKind.approval:
+        page = ClientToolsPage(key: pageKey, endpoint: endpoint);
+      case FeatureKind.liveState:
+        page = LiveStatePage(key: pageKey, endpoint: endpoint);
+      case FeatureKind.chat:
+        page = ChatPage(key: pageKey, endpoint: endpoint);
+    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
